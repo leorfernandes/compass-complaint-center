@@ -3,6 +3,9 @@ import connectDB from '@/lib/mongodb';
 import User from '@/models/User';
 import { getTokenFromRequest, verifyToken, UserRole } from '@/lib/auth';
 
+// Force Node.js runtime
+export const runtime = 'nodejs';
+
 export async function GET(request: NextRequest) {
   try {
     // Get token from request

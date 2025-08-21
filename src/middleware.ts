@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getTokenFromRequest, verifyToken, UserRole } from '@/lib/auth';
 
+// Force Node.js runtime for middleware
+export const runtime = 'nodejs';
+
 // Define protected routes
 const protectedRoutes = {
   admin: ['/admin'],

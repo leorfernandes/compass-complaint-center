@@ -3,6 +3,9 @@ import { SettingsService } from '@/lib/settingsService';
 import { UserSettingsService } from '@/lib/userSettingsService';
 import { verifyRequestToken } from '@/lib/auth';
 
+// Force Node.js runtime
+export const runtime = 'nodejs';
+
 /**
  * GET - Retrieve current system and user settings
  */

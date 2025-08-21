@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { EmailService } from '@/lib/emailService';
-import { verifyToken } from '@/lib/auth';
+import { verifyRequestToken } from '@/lib/auth';
+
+// Force Node.js runtime
+export const runtime = 'nodejs';
 
 /**
  * POST - Test email configuration from user-specific settings
@@ -8,7 +11,7 @@ import { verifyToken } from '@/lib/auth';
 export async function POST(request: NextRequest) {
   try {
     // Verify authentication and get user ID
-    const authResult = await verifyToken(request);
+    const authResult = verifyRequestToken(request);
     if (!authResult.valid || !authResult.user) {
       return NextResponse.json(
         { error: 'Unauthorized' },

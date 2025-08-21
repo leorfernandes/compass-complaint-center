@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createLogoutCookie } from '@/lib/auth';
 
+// Force Node.js runtime
+export const runtime = 'nodejs';
+
 export async function POST(request: NextRequest) {
   try {
     // Create response

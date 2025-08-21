@@ -10,6 +10,9 @@ import {
   createAuthCookie 
 } from '@/lib/auth';
 
+// Force Node.js runtime
+export const runtime = 'nodejs';
+
 export async function POST(request: NextRequest) {
   try {
     const { email, password, role } = await request.json();
