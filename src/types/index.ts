@@ -52,5 +52,5 @@ export interface EmailNotification {
   to: string;
   subject: string;
   html: string;
-  type: 'new_complaint' | 'status_update';
+  type: 'new_complaint' | 'status_update' | 'test';
 }

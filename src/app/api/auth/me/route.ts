@@ -23,12 +23,12 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Handle legacy admin token
-    if (payload.userId === 'admin') {
+    // Handle legacy admin tokens
+    if (payload.userId === 'admin' || payload.userId === 'demo') {
       return NextResponse.json({
         success: true,
         user: {
-          id: 'admin',
+          id: payload.userId,
           email: payload.email,
           role: UserRole.ADMIN,
           isActive: true,

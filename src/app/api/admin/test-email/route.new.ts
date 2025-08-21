@@ -1,27 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { EmailService } from '@/lib/emailService';
-import { verifyToken } from '@/lib/auth';
 
 /**
- * POST - Test email configuration from user-specific settings
+ * POST - Test email configuration from database settings
  */
 export async function POST(request: NextRequest) {
   try {
-    // Verify authentication and get user ID
-    const authResult = await verifyToken(request);
-    if (!authResult.valid || !authResult.user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
-
-    const userId = authResult.user.id;
     const body = await request.json();
     const { testEmail } = body;
 
-    // Test the email configuration using user-specific settings
-    const emailWorking = await EmailService.testEmailConfiguration(userId, testEmail);
+    // Test the email configuration using database settings
+    const emailWorking = await EmailService.testEmailConfiguration(testEmail);
 
     if (emailWorking) {
       return NextResponse.json({
@@ -31,7 +20,7 @@ export async function POST(request: NextRequest) {
     } else {
       return NextResponse.json({
         success: false,
-        error: 'Failed to send test email. Please check your notification email configuration.'
+        error: 'Failed to send test email. Please check your SMTP configuration in settings.'
       }, { status: 400 });
     }
   } catch (error) {

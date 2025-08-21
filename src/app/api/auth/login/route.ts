@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import User from '@/models/User';
+import { UserSettingsService } from '@/lib/userSettingsService';
 import { 
   comparePassword, 
   generateToken, 
@@ -45,8 +46,18 @@ export async function POST(request: NextRequest) {
     console.log('🔐 Checking legacy admin:', { isAdminLogin, password, adminPass: process.env.ADMIN_PASSWORD });
     if (isAdminLogin && isValidAdminPassword(password)) {
       console.log('✅ Legacy admin login successful');
+      
+      // Clean demo user settings on each login
+      const demoUserId = 'demo';
+      try {
+        await UserSettingsService.cleanDemoUserSettings();
+        console.log('🧹 Demo user email settings cleaned');
+      } catch (error) {
+        console.error('Error cleaning demo settings:', error);
+      }
+      
       const token = generateToken({
-        userId: 'admin',
+        userId: demoUserId,
         email: email,
         role: UserRole.ADMIN,
       });
@@ -55,7 +66,7 @@ export async function POST(request: NextRequest) {
         success: true,
         message: 'Admin login successful',
         user: {
-          id: 'admin',
+          id: demoUserId,
           email: email,
           role: UserRole.ADMIN,
         },
@@ -98,7 +109,7 @@ export async function POST(request: NextRequest) {
 
     // Generate JWT token
     const token = generateToken({
-      userId: user._id.toString(),
+      userId: (user as any)._id.toString(),
       email: user.email,
       role: user.role,
     });
@@ -107,7 +118,7 @@ export async function POST(request: NextRequest) {
     const response = NextResponse.json({
       success: true,
       message: 'Login successful',
-      user: user.toSafeObject(),
+      user: user.toObject(),
       token,
     });
 

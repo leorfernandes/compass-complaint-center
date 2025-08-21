@@ -1,145 +1,179 @@
 import { NextRequest, NextResponse } from 'next/server';
-import fs from 'fs/promises';
-import path from 'path';
-import mongoose from 'mongoose';
+import { SettingsService } from '@/lib/settingsService';
+import { UserSettingsService } from '@/lib/userSettingsService';
+import { verifyRequestToken } from '@/lib/auth';
 
-const ENV_FILE_PATH = path.join(process.cwd(), '.env.local');
-
-interface Settings {
-  email: {
-    smtpHost: string;
-    smtpPort: string;
-    smtpUser: string;
-    smtpPass: string;
-    adminEmail: string;
-  };
-  database: {
-    mongodbUri: string;
-    connectionStatus: 'connected' | 'disconnected' | 'testing';
-  };
-  app: {
-    baseUrl: string;
-  };
-}
-
-// Check current database connection status
-async function checkDatabaseConnection(): Promise<'connected' | 'disconnected'> {
+/**
+ * GET - Retrieve current system and user settings
+ */
+export async function GET(request: NextRequest) {
   try {
-    if (mongoose.connection.readyState === 1) {
-      // Test the connection with a simple ping
-      await mongoose.connection.db.admin().ping();
-      return 'connected';
-    } else {
-      return 'disconnected';
+    // Verify authentication and get user ID
+    const authResult = verifyRequestToken(request);
+    if (!authResult.valid || !authResult.user) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
     }
-  } catch (error) {
-    console.error('Database connection check failed:', error);
-    return 'disconnected';
-  }
-}
 
-// GET /api/admin/settings - Get current settings
-export async function GET() {
-  try {
-    // Check current database connection status
-    const connectionStatus = await checkDatabaseConnection();
+    const userId = authResult.user.id;
+    
+    // For demo account, return default settings without database interaction
+    if (userId === 'demo') {
+      const demoResponse = {
+        systemSettings: {
+          appConfig: {
+            baseUrl: process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3001',
+            systemName: 'Compass Complaint Center (Demo)'
+          },
+          smtpConfigured: false
+        },
+        userSettings: {
+          emailConfig: {
+            notificationEmail: 'demo@example.com',
+            receiveNewComplaints: true,
+            receiveStatusUpdates: true
+          },
+          preferences: {
+            theme: 'light',
+            language: 'en'
+          }
+        }
+      };
 
-    const settings: Settings = {
-      email: {
-        smtpHost: process.env.SMTP_HOST || '',
-        smtpPort: process.env.SMTP_PORT || '587',
-        smtpUser: process.env.SMTP_USER || '',
-        smtpPass: process.env.SMTP_PASS ? '••••••••' : '', // Mask password
-        adminEmail: process.env.ADMIN_EMAIL || '',
+      return NextResponse.json({
+        success: true,
+        data: demoResponse
+      });
+    }
+    
+    // Get system-wide SMTP settings (for admin reference only)
+    const systemSettings = await SettingsService.getSettings();
+    
+    // Get user-specific settings
+    const userSettings = await UserSettingsService.getUserSettings(userId);
+    
+    // Return combined settings with user-specific email config taking precedence
+    const response = {
+      systemSettings: {
+        appConfig: systemSettings.appConfig,
+        // Only show if SMTP is configured system-wide
+        smtpConfigured: systemSettings.emailConfig.isConfigured
       },
-      database: {
-        mongodbUri: process.env.MONGODB_URI ? '••••••••' : '', // Mask URI
-        connectionStatus: connectionStatus,
-      },
-      app: {
-        baseUrl: process.env.NEXT_PUBLIC_BASE_URL || '',
-      },
+      userSettings: {
+        emailConfig: userSettings.emailConfig,
+        preferences: userSettings.preferences
+      }
     };
 
-    return NextResponse.json(settings);
+    return NextResponse.json({
+      success: true,
+      data: response
+    });
   } catch (error) {
-    console.error('Error getting settings:', error);
+    console.error('Error fetching settings:', error);
     return NextResponse.json(
-      { error: 'Failed to get settings' },
+      { error: 'Failed to fetch settings' },
       { status: 500 }
     );
   }
 }
 
-// POST /api/admin/settings - Update settings
+/**
+ * POST - Update user-specific settings
+ */
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
-    const { email, database, app } = body;
-
-    // Read current .env.local file
-    let envContent = '';
-    try {
-      envContent = await fs.readFile(ENV_FILE_PATH, 'utf-8');
-    } catch (error) {
-      // File doesn't exist, create new content
-      envContent = '';
+    // Verify authentication and get user ID
+    const authResult = verifyRequestToken(request);
+    if (!authResult.valid || !authResult.user) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
     }
 
-    // Parse existing env variables
-    const envVars: Record<string, string> = {};
-    envContent.split('\n').forEach(line => {
-      const trimmed = line.trim();
-      if (trimmed && !trimmed.startsWith('#')) {
-        const [key, ...valueParts] = trimmed.split('=');
-        if (key && valueParts.length > 0) {
-          envVars[key.trim()] = valueParts.join('=').trim();
+    const userId = authResult.user.id;
+    
+    // Demo account cannot save settings - return success with demo data
+    if (userId === 'demo') {
+      return NextResponse.json({ 
+        success: true, 
+        message: 'Demo mode: Settings appear saved but are not persisted.',
+        data: {
+          userSettings: {
+            emailConfig: {
+              notificationEmail: 'demo@example.com',
+              receiveNewComplaints: true,
+              receiveStatusUpdates: true
+            },
+            preferences: {
+              theme: 'light',
+              language: 'en'
+            }
+          }
         }
+      });
+    }
+
+    const body = await request.json();
+    const { emailConfig, preferences, systemSettings } = body;
+
+    let updatedUserSettings;
+
+    // Update user email configuration if provided
+    if (emailConfig) {
+      updatedUserSettings = await UserSettingsService.updateUserEmailConfig(userId, {
+        notificationEmail: emailConfig.notificationEmail,
+        receiveNewComplaints: emailConfig.receiveNewComplaints,
+        receiveStatusUpdates: emailConfig.receiveStatusUpdates
+      });
+    }
+
+    // Update user preferences if provided
+    if (preferences) {
+      updatedUserSettings = await UserSettingsService.updateUserPreferences(userId, preferences);
+    }
+
+    // Update system settings if provided (admin only)
+    if (systemSettings && authResult.user.role === 'admin') {
+      if (systemSettings.app) {
+        await SettingsService.updateAppConfig(systemSettings.app);
       }
-    });
+      
+      // System-wide SMTP settings (for the email service to use)
+      if (systemSettings.smtp) {
+        const emailConfig = {
+          smtpHost: systemSettings.smtp.smtpHost,
+          smtpPort: parseInt(systemSettings.smtp.smtpPort) || 587,
+          smtpUser: systemSettings.smtp.smtpUser,
+          adminEmail: 'system@compass.com', // System placeholder
+        };
 
-    // Update with new values
-    if (email) {
-      if (email.smtpHost) envVars.SMTP_HOST = email.smtpHost;
-      if (email.smtpPort) envVars.SMTP_PORT = email.smtpPort;
-      if (email.smtpUser) envVars.SMTP_USER = email.smtpUser;
-      if (email.smtpPass && email.smtpPass !== '••••••••') envVars.SMTP_PASS = email.smtpPass;
-      if (email.adminEmail) envVars.ADMIN_EMAIL = email.adminEmail;
-    }
+        // Only update password if it's not masked
+        if (systemSettings.smtp.smtpPass && systemSettings.smtp.smtpPass !== '••••••••') {
+          (emailConfig as any).smtpPass = systemSettings.smtp.smtpPass;
+        }
 
-    if (database) {
-      if (database.mongodbUri && database.mongodbUri !== '••••••••') {
-        envVars.MONGODB_URI = database.mongodbUri;
+        await SettingsService.updateEmailConfig(emailConfig);
       }
     }
 
-    if (app) {
-      if (app.baseUrl) envVars.NEXT_PUBLIC_BASE_URL = app.baseUrl;
+    // Get updated settings
+    if (!updatedUserSettings) {
+      updatedUserSettings = await UserSettingsService.getUserSettings(userId);
     }
-
-    // Generate new .env.local content
-    const newEnvContent = [
-      '# MongoDB Configuration - MongoDB Atlas',
-      `MONGODB_URI=${envVars.MONGODB_URI || ''}`,
-      '',
-      '# Email Configuration',
-      `SMTP_HOST=${envVars.SMTP_HOST || ''}`,
-      `SMTP_PORT=${envVars.SMTP_PORT || '587'}`,
-      `SMTP_USER=${envVars.SMTP_USER || ''}`,
-      `SMTP_PASS=${envVars.SMTP_PASS || ''}`,
-      `ADMIN_EMAIL=${envVars.ADMIN_EMAIL || ''}`,
-      '',
-      '# Application Configuration',
-      `NEXT_PUBLIC_BASE_URL=${envVars.NEXT_PUBLIC_BASE_URL || ''}`,
-      '',
-    ].join('\n');
-
-    // Write to .env.local file
-    await fs.writeFile(ENV_FILE_PATH, newEnvContent, 'utf-8');
 
     return NextResponse.json({ 
       success: true, 
-      message: 'Settings updated successfully. Please restart the server for changes to take effect.' 
+      message: 'Settings updated successfully.',
+      data: {
+        userSettings: {
+          emailConfig: updatedUserSettings.emailConfig,
+          preferences: updatedUserSettings.preferences
+        }
+      }
     });
   } catch (error) {
     console.error('Error updating settings:', error);

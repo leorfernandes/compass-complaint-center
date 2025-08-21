@@ -1,4 +1,4 @@
-import jwt from 'jsonwebtoken';
+import jwt, { SignOptions } from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 
 // JWT secret from environment
@@ -50,9 +50,10 @@ export interface AuthResponse {
  * @returns Signed JWT token string
  */
 export function generateToken(payload: Omit<JWTPayload, 'iat' | 'exp'>): string {
-  return jwt.sign(payload, JWT_SECRET, {
-    expiresIn: JWT_EXPIRES_IN,
-  });
+  const options: SignOptions = {
+    expiresIn: JWT_EXPIRES_IN as string,
+  };
+  return jwt.sign(payload, JWT_SECRET, options);
 }
 
 /**
@@ -67,6 +68,49 @@ export function verifyToken(token: string): JWTPayload | null {
   } catch (error) {
     console.error('JWT verification failed:', error);
     return null;
+  }
+}
+
+/**
+ * Extract and verify JWT token from Next.js request
+ * @param request - NextRequest object
+ * @returns Object with validation status and user data
+ */
+export function verifyRequestToken(request: any): { valid: boolean; user?: any } {
+  try {
+    // Use the same token extraction as getTokenFromRequest for consistency
+    const token = getTokenFromRequest(request);
+    
+    // Debug: Log the extraction process
+    console.log('🔍 Auth Debug - Request cookies:', request.headers.get('Cookie'));
+    console.log('🔍 Auth Debug - Authorization header:', request.headers.get('authorization'));
+    console.log('🔍 Auth Debug - Extracted token:', token ? token.substring(0, 30) + '...' : 'None');
+
+    if (!token) {
+      console.log('❌ Auth Debug - No token found');
+      return { valid: false };
+    }
+
+    const decoded = verifyToken(token);
+    console.log('🔍 Auth Debug - Token decoded:', decoded ? 'Success' : 'Failed');
+    if (!decoded) {
+      return { valid: false };
+    }
+
+    const result = {
+      valid: true,
+      user: {
+        id: decoded.userId,
+        email: decoded.email,
+        role: decoded.role
+      }
+    };
+    
+    console.log('✅ Auth Debug - Authentication successful for user:', result.user.id);
+    return result;
+  } catch (error) {
+    console.error('Request token verification failed:', error);
+    return { valid: false };
   }
 }
 
@@ -125,14 +169,18 @@ export function getTokenFromRequest(request: Request): string | null {
  */
 export function createAuthCookie(token: string): string {
   const maxAge = 7 * 24 * 60 * 60; // 7 days in seconds
-  return `token=${token}; HttpOnly; Secure; SameSite=Strict; Max-Age=${maxAge}; Path=/`;
+  const isProduction = process.env.NODE_ENV === 'production';
+  const secureFlag = isProduction ? 'Secure; ' : '';
+  return `token=${token}; HttpOnly; ${secureFlag}SameSite=Strict; Max-Age=${maxAge}; Path=/`;
 }
 
 /**
  * Create logout cookie
  */
 export function createLogoutCookie(): string {
-  return 'token=; HttpOnly; Secure; SameSite=Strict; Max-Age=0; Path=/';
+  const isProduction = process.env.NODE_ENV === 'production';
+  const secureFlag = isProduction ? 'Secure; ' : '';
+  return `token=; HttpOnly; ${secureFlag}SameSite=Strict; Max-Age=0; Path=/`;
 }
 
 /**

@@ -1,7 +1,6 @@
 import nodemailer from 'nodemailer';
 import { EmailNotification } from '@/types';
 import { SettingsService } from '@/lib/settingsService';
-import { UserSettingsService } from '@/lib/userSettingsService';
 
 /**
  * Email Service for sending notifications
@@ -21,7 +20,7 @@ export class EmailService {
         return null;
       }
 
-      return nodemailer.createTransport({
+      return nodemailer.createTransporter({
         host: emailConfig.smtpHost,
         port: emailConfig.smtpPort,
         secure: false, // true for 465, false for other ports
@@ -67,36 +66,25 @@ export class EmailService {
   }
 
   /**
-   * Send notification for new complaint to all admin users
+   * Send notification for new complaint
    */
   static async sendNewComplaintNotification(complaint: any): Promise<boolean> {
     try {
-      // Get all admin users who want new complaint notifications
-      const recipients = await UserSettingsService.getNotificationRecipients('new_complaint');
+      const emailConfig = await SettingsService.getEmailConfig();
       
-      if (recipients.length === 0) {
-        console.warn('No admin users configured to receive new complaint notifications.');
+      if (!emailConfig.adminEmail) {
+        console.warn('Admin email not configured. Skipping new complaint notification.');
         return false;
       }
 
-      let allSent = true;
-      
-      // Send to each recipient
-      for (const recipient of recipients) {
-        const notification: EmailNotification = {
-          to: recipient,
-          subject: `🚨 New Complaint Received - ${complaint.title}`,
-          html: this.generateNewComplaintEmail(complaint),
-          type: 'new_complaint',
-        };
+      const notification: EmailNotification = {
+        to: emailConfig.adminEmail,
+        subject: `🚨 New Complaint Received - ${complaint.title}`,
+        html: this.generateNewComplaintEmail(complaint),
+        type: 'new_complaint',
+      };
 
-        const sent = await this.sendEmail(notification);
-        if (!sent) {
-          allSent = false;
-        }
-      }
-
-      return allSent;
+      return await this.sendEmail(notification);
     } catch (error) {
       console.error('Error sending new complaint notification:', error);
       return false;
@@ -104,36 +92,25 @@ export class EmailService {
   }
 
   /**
-   * Send notification for status update to all admin users
+   * Send notification for status update
    */
   static async sendStatusUpdateNotification(complaint: any, oldStatus: string): Promise<boolean> {
     try {
-      // Get all admin users who want status update notifications
-      const recipients = await UserSettingsService.getNotificationRecipients('status_update');
+      const emailConfig = await SettingsService.getEmailConfig();
       
-      if (recipients.length === 0) {
-        console.warn('No admin users configured to receive status update notifications.');
+      if (!emailConfig.adminEmail) {
+        console.warn('Admin email not configured. Skipping status update notification.');
         return false;
       }
 
-      let allSent = true;
-      
-      // Send to each recipient
-      for (const recipient of recipients) {
-        const notification: EmailNotification = {
-          to: recipient,
-          subject: `📋 Complaint Status Updated - ${complaint.title}`,
-          html: this.generateStatusUpdateEmail(complaint, oldStatus),
-          type: 'status_update',
-        };
+      const notification: EmailNotification = {
+        to: emailConfig.adminEmail,
+        subject: `📋 Complaint Status Updated - ${complaint.title}`,
+        html: this.generateStatusUpdateEmail(complaint, oldStatus),
+        type: 'status_update',
+      };
 
-        const sent = await this.sendEmail(notification);
-        if (!sent) {
-          allSent = false;
-        }
-      }
-
-      return allSent;
+      return await this.sendEmail(notification);
     } catch (error) {
       console.error('Error sending status update notification:', error);
       return false;
@@ -141,9 +118,9 @@ export class EmailService {
   }
 
   /**
-   * Test email configuration for specific user
+   * Test email configuration
    */
-  static async testEmailConfiguration(userId: string, testEmail?: string): Promise<boolean> {
+  static async testEmailConfiguration(testEmail?: string): Promise<boolean> {
     try {
       const transporter = await this.createTransporter();
       
@@ -151,12 +128,8 @@ export class EmailService {
         return false;
       }
 
-      // Use provided test email, or user's notification email, or user's main email
-      let recipient = testEmail;
-      if (!recipient) {
-        const userEmail = await UserSettingsService.getNotificationEmail(userId);
-        recipient = userEmail || undefined;
-      }
+      const emailConfig = await SettingsService.getEmailConfig();
+      const recipient = testEmail || emailConfig.adminEmail;
 
       if (!recipient) {
         console.error('No recipient email for test');
@@ -171,7 +144,7 @@ export class EmailService {
       };
 
       await this.sendEmail(testNotification);
-      console.log('Test email sent successfully to:', recipient);
+      console.log('Test email sent successfully');
       return true;
     } catch (error) {
       console.error('Email configuration test failed:', error);
@@ -237,20 +210,17 @@ export class EmailService {
    * Generate HTML template for new complaint email
    */
   private static generateNewComplaintEmail(complaint: any): string {
-    const priorityColor: Record<string, string> = {
+    const priorityColor = {
       Low: '#10b981',
       Medium: '#f59e0b',
       High: '#ef4444',
-    };
+    }[complaint.priority] || '#6b7280';
 
-    const categoryIcon: Record<string, string> = {
+    const categoryIcon = {
       Product: '📦',
       Service: '🛎️',
       Support: '💬',
-    };
-
-    const selectedPriorityColor = priorityColor[complaint.priority] || '#6b7280';
-    const selectedCategoryIcon = categoryIcon[complaint.category] || '📋';
+    }[complaint.category] || '📋';
 
     return `
       <!DOCTYPE html>
@@ -285,13 +255,13 @@ export class EmailService {
           
           <div class="detail-row">
             <div class="label">Category:</div>
-            <div class="value">${selectedCategoryIcon} ${complaint.category}</div>
+            <div class="value">${categoryIcon} ${complaint.category}</div>
           </div>
           
           <div class="detail-row">
             <div class="label">Priority Level:</div>
             <div class="value">
-              <span class="priority-badge" style="background-color: ${selectedPriorityColor};">
+              <span class="priority-badge" style="background-color: ${priorityColor};">
                 ${complaint.priority}
               </span>
             </div>
@@ -326,20 +296,17 @@ export class EmailService {
    * Generate HTML template for status update email
    */
   private static generateStatusUpdateEmail(complaint: any, oldStatus: string): string {
-    const statusColor: Record<string, string> = {
+    const statusColor = {
       Pending: '#f59e0b',
       'In Progress': '#2563eb',
       Resolved: '#10b981',
-    };
+    }[complaint.status] || '#6b7280';
 
-    const statusIcon: Record<string, string> = {
+    const statusIcon = {
       Pending: '⏳',
       'In Progress': '🔄',
       Resolved: '✅',
-    };
-
-    const selectedStatusColor = statusColor[complaint.status] || '#6b7280';
-    const selectedStatusIcon = statusIcon[complaint.status] || '📋';
+    }[complaint.status] || '📋';
 
     return `
       <!DOCTYPE html>
@@ -353,7 +320,7 @@ export class EmailService {
           .header { background: #10b981; color: white; padding: 20px; border-radius: 8px 8px 0 0; text-align: center; }
           .content { background: #f8fafc; padding: 20px; border: 1px solid #e2e8f0; }
           .footer { background: #1e293b; color: white; padding: 15px; border-radius: 0 0 8px 8px; text-align: center; font-size: 14px; }
-          .status-update { background: white; padding: 20px; border-radius: 8px; text-align: center; margin: 20px 0; border: 2px solid ${selectedStatusColor}; }
+          .status-update { background: white; padding: 20px; border-radius: 8px; text-align: center; margin: 20px 0; border: 2px solid ${statusColor}; }
           .detail-row { margin: 10px 0; padding: 10px; background: white; border-radius: 4px; border-left: 4px solid #10b981; }
           .label { font-weight: bold; color: #1e293b; }
           .value { margin-top: 5px; }
@@ -372,8 +339,8 @@ export class EmailService {
             <p style="margin: 15px 0;">
               <span style="background: #6b7280; color: white; padding: 6px 12px; border-radius: 15px; margin-right: 10px;">${oldStatus}</span>
               <span style="font-size: 18px;">→</span>
-              <span class="status-badge" style="background-color: ${selectedStatusColor}; margin-left: 10px;">
-                ${selectedStatusIcon} ${complaint.status}
+              <span class="status-badge" style="background-color: ${statusColor}; margin-left: 10px;">
+                ${statusIcon} ${complaint.status}
               </span>
             </p>
           </div>

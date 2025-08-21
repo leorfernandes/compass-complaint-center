@@ -74,14 +74,14 @@ export default function Navigation({ isAdmin = false }: NavigationProps) {
                   📋 Manage Complaints
                 </Link>
                 <Link
-                  href="/admin/settings"
+                  href="/admin/user-settings"
                   className={`px-3 py-2 rounded-md text-sm font-medium ${
-                    pathname === '/admin/settings' 
+                    pathname === '/admin/user-settings' || pathname === '/admin/settings'
                       ? 'bg-blue-100 text-blue-700' 
                       : 'text-gray-600 hover:text-gray-900'
                   }`}
                 >
-                  ⚙️ Settings
+                  ⚙️ My Settings
                 </Link>
                 <Link
                   href="/"
