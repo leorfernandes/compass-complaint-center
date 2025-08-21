@@ -137,10 +137,10 @@ export default function AdminLogin() {
               transition: 'background-color 0.15s ease-in-out'
             }}
             onMouseOver={(e) => {
-              if (!isLoading) e.target.style.backgroundColor = '#2563eb';
+              if (!isLoading) (e.target as HTMLElement).style.backgroundColor = '#2563eb';
             }}
             onMouseOut={(e) => {
-              if (!isLoading) e.target.style.backgroundColor = '#3b82f6';
+              if (!isLoading) (e.target as HTMLElement).style.backgroundColor = '#3b82f6';
             }}
           >
             {isLoading ? '🔄 Logging in...' : '🔑 Login to Admin Panel'}

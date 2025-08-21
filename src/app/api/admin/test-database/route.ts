@@ -19,6 +19,9 @@ export async function POST(request: NextRequest) {
     });
 
     // Test basic operations
+    if (!connection.db) {
+      throw new Error('Database connection failed');
+    }
     await connection.db.admin().ping();
     
     // Get database info
@@ -31,7 +34,7 @@ export async function POST(request: NextRequest) {
       success: true, 
       message: 'Database connection successful!',
       info: {
-        dbName: connection.db.databaseName,
+        dbName: connection.db?.databaseName || 'unknown',
         collections: dbStats.collections || 0,
         dataSize: dbStats.dataSize || 0,
       }
