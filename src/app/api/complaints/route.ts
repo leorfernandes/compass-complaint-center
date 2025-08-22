@@ -9,6 +9,9 @@ import { rateLimit, getClientIP } from '@/lib/rateLimit';
 import { complaintSchema, queryParamsSchema } from '@/lib/validation';
 import { isDatabaseAvailable, filterMockComplaints } from '@/lib/mockData';
 
+// Force Node.js runtime
+export const runtime = 'nodejs';
+
 // GET /api/complaints - Retrieve all complaints (with optional filtering)
 export async function GET(request: NextRequest) {
   try {
