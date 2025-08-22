@@ -50,10 +50,9 @@ export interface AuthResponse {
  * @returns Signed JWT token string
  */
 export function generateToken(payload: Omit<JWTPayload, 'iat' | 'exp'>): string {
-  const options = {
-    expiresIn: JWT_EXPIRES_IN,
-  };
-  return jwt.sign(payload, JWT_SECRET, options);
+  return jwt.sign(payload, JWT_SECRET, {
+    expiresIn: '7d', // Use explicit string instead of environment variable
+  });
 }
 
 /**
