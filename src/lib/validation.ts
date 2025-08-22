@@ -11,10 +11,10 @@ export const complaintSchema = z.object({
     .max(1000, 'Description cannot exceed 1000 characters')
     .trim(),
   category: z.enum(['service', 'product', 'billing', 'technical', 'other'], {
-    errorMap: () => ({ message: 'Please select a valid category' })
+    message: 'Please select a valid category'
   }),
   priority: z.enum(['low', 'medium', 'high'], {
-    errorMap: () => ({ message: 'Please select a valid priority' })
+    message: 'Please select a valid priority'
   }),
   customerName: z.string()
     .min(2, 'Name must be at least 2 characters')
@@ -35,7 +35,7 @@ export const complaintSchema = z.object({
 // Schema for status update validation
 export const statusUpdateSchema = z.object({
   status: z.enum(['open', 'in_progress', 'resolved', 'closed'], {
-    errorMap: () => ({ message: 'Please select a valid status' })
+    message: 'Please select a valid status'
   }),
   adminNotes: z.string()
     .max(500, 'Admin notes cannot exceed 500 characters')
