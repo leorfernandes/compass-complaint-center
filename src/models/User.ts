@@ -16,9 +16,7 @@ export interface IUser extends Document {
 
 // Static methods interface
 export interface IUserModel extends Model<IUser> {
-  findByEmail(email: string): Promise<IUser | null>;
-  findActiveUsers(): Promise<IUser[]>;
-  findAdmins(): Promise<IUser[]>;
+  // Keep interface simple for now
 }
 
 // User schema
@@ -75,19 +73,6 @@ UserSchema.methods.toSafeObject = function() {
   const userObject = this.toObject();
   const { password, ...safeObject } = userObject;
   return safeObject;
-};
-
-// Static methods
-UserSchema.statics.findByEmail = function(email: string) {
-  return this.findOne({ email: email.toLowerCase() });
-};
-
-UserSchema.statics.findActiveUsers = function() {
-  return this.find({ isActive: true });
-};
-
-UserSchema.statics.findAdmins = function() {
-  return this.find({ role: UserRole.ADMIN, isActive: true });
 };
 
 // Create and export the model
