@@ -78,8 +78,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(response, { status: emailSent ? 200 : 500 });
     }
 
-    // Default test - check configuration
-    const isValid = await EmailService.testEmailConfiguration();
+    // Default test - check configuration (use 'demo' as default userId for testing)
+    const isValid = await EmailService.testEmailConfiguration('demo');
     
     const response: ApiResponse = {
       success: isValid,
