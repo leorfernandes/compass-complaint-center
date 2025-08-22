@@ -19,8 +19,8 @@ export async function POST(request: NextRequest) {
     const { type = 'test' } = body;
 
     if (type === 'config') {
-      // Test email configuration
-      const isValid = await EmailService.testEmailConfiguration();
+      // Test email configuration (use 'demo' as default userId for testing)
+      const isValid = await EmailService.testEmailConfiguration('demo');
       
       const response: ApiResponse = {
         success: isValid,
