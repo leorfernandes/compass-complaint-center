@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import mongoose from 'mongoose';
 import connectDB from '@/lib/mongodb';
 import User from '@/models/User';
 import { getTokenFromRequest, verifyToken, UserRole } from '@/lib/auth';

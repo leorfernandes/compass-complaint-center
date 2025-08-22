@@ -10,6 +10,15 @@ export interface IUser extends Document {
   lastLogin?: Date;
   createdAt: Date;
   updatedAt: Date;
+  // Instance methods
+  toSafeObject(): any;
+}
+
+// Static methods interface
+export interface IUserModel extends Model<IUser> {
+  findByEmail(email: string): Promise<IUser | null>;
+  findActiveUsers(): Promise<IUser[]>;
+  findAdmins(): Promise<IUser[]>;
 }
 
 // User schema
@@ -82,6 +91,6 @@ UserSchema.statics.findAdmins = function() {
 };
 
 // Create and export the model
-const User: Model<IUser> = mongoose.models.User || mongoose.model<IUser>('User', UserSchema);
+const User: IUserModel = mongoose.models.User || mongoose.model<IUser>('User', UserSchema);
 
 export default User;

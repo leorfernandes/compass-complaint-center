@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import Complaint from '@/models/Complaint';
 import { validateComplaintData, sanitizeInput } from '@/utils/validation';
+import { ComplaintCategory, ComplaintPriority } from '@/types';
 import { ComplaintFormData, ApiResponse, ComplaintFilters } from '@/types';
 import { EmailService } from '@/lib/emailService';
 import { rateLimit, getClientIP } from '@/lib/rateLimit';
@@ -165,8 +166,8 @@ export async function POST(request: NextRequest) {
     const sanitizedData = {
       title: sanitizeInput(body.title || ''),
       description: sanitizeInput(body.description || ''),
-      category: sanitizeInput(body.category || ''),
-      priority: sanitizeInput(body.priority || ''),
+      category: sanitizeInput(body.category || '') as ComplaintCategory,
+      priority: sanitizeInput(body.priority || '') as ComplaintPriority,
       userEmail: userEmail || 'anonymous@example.com', // Use JWT email or fallback
       userId: userId || null, // Store user ID if available
     };

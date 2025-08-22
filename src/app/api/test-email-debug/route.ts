@@ -40,17 +40,18 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error('❌ Email test failed:', error);
+    const errorObj = error as Error;
     console.error('Error details:', {
-      message: error.message,
-      code: error.code,
-      stack: error.stack
+      message: errorObj.message,
+      code: (errorObj as any).code,
+      stack: errorObj.stack
     });
     
     return NextResponse.json({
       success: false,
-      error: error.message,
+      error: errorObj.message,
       details: {
-        code: error.code,
+        code: (errorObj as any).code,
         config: {
           smtpHost: process.env.SMTP_HOST,
           smtpPort: process.env.SMTP_PORT,

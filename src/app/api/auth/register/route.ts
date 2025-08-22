@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import mongoose from 'mongoose';
 import connectDB from '@/lib/mongodb';
 import User from '@/models/User';
 import { 
@@ -78,7 +79,7 @@ export async function POST(request: NextRequest) {
 
     // Generate JWT token
     const token = generateToken({
-      userId: user._id.toString(),
+      userId: (user._id as mongoose.Types.ObjectId).toString(),
       email: user.email,
       role: user.role,
     });
