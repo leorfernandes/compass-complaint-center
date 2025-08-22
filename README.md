@@ -2,6 +2,12 @@
 
 A comprehensive full-stack complaint management system built with Next.js 14, TypeScript, MongoDB, and automated email notifications. Features a modern admin dashboard, real-time statistics, and user-friendly configuration interfaces.
 
+## 🌐 Live Demo
+
+**🚀 [View Live Application](https://compass-complaint-center.vercel.app/)**
+
+![Application Screenshot](./public/media/Screenshot.png)
+
 ![System Overview](https://img.shields.io/badge/Status-Production%20Ready-green)
 ![Next.js](https://img.shields.io/badge/Next.js-14.x-black)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue)
