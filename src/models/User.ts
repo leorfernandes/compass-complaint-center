@@ -55,12 +55,12 @@ const UserSchema = new Schema<IUser>(
     timestamps: true,
     toJSON: {
       transform: (doc, ret) => {
-        // Remove password from JSON output
-        delete ret.password;
-        ret.id = ret._id;
-        delete ret._id;
-        delete ret.__v;
-        return ret;
+        // Remove password and MongoDB-specific fields from JSON output
+        const { password, _id, __v, ...safeRet } = ret;
+        return {
+          ...safeRet,
+          id: _id
+        };
       },
     },
   }
@@ -73,8 +73,8 @@ UserSchema.index({ isActive: 1 });
 // Instance methods
 UserSchema.methods.toSafeObject = function() {
   const userObject = this.toObject();
-  delete userObject.password;
-  return userObject;
+  const { password, ...safeObject } = userObject;
+  return safeObject;
 };
 
 // Static methods
@@ -91,6 +91,6 @@ UserSchema.statics.findAdmins = function() {
 };
 
 // Create and export the model
-const User: IUserModel = mongoose.models.User || mongoose.model<IUser>('User', UserSchema);
+const User = mongoose.models.User || mongoose.model<IUser>('User', UserSchema);
 
 export default User;
