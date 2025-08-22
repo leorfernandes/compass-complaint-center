@@ -9,7 +9,7 @@ import { ComplaintAPI, handleApiError } from '@/utils/api';
 import { validateComplaintData } from '@/utils/validation';
 
 export default function SubmitComplaint() {
-  const { user, isAuthenticated } = useAuth();
+  const { user } = useAuth();
   const [formData, setFormData] = useState<ComplaintFormData>({
     title: '',
     description: '',

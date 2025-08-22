@@ -16,7 +16,7 @@ interface Complaint {
 }
 
 export default function MyComplaintsPage() {
-  const { user, isAuthenticated } = useAuth();
+  const { user } = useAuth();
   const [complaints, setComplaints] = useState<Complaint[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -27,10 +27,10 @@ export default function MyComplaintsPage() {
   });
 
   useEffect(() => {
-    if (isAuthenticated) {
+    if (user) {
       fetchMyComplaints();
     }
-  }, [isAuthenticated, filter]);
+  }, [user, filter]);
 
   const fetchMyComplaints = async () => {
     try {
@@ -93,7 +93,7 @@ export default function MyComplaintsPage() {
     }
   };
 
-  if (!isAuthenticated) {
+  if (!user) {
     return (
       <div className="min-h-screen bg-gray-50">
         <Navigation />
