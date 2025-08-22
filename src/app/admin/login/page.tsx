@@ -156,7 +156,7 @@ export default function AdminLogin() {
           color: '#6b7280'
         }}>
           <p style={{ margin: '0', textAlign: 'center' }}>
-            🔐 For demo purposes, the default password is: <strong>admin123</strong>
+            🔐 For demo purposes, the default password is: <strong>demo123</strong>
           </p>
         </div>
       </div>

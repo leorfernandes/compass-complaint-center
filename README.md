@@ -494,7 +494,7 @@ Vercel provides seamless deployment for Next.js applications with automatic scal
    SMTP_PORT=587
    SMTP_USER=your-email@gmail.com
    SMTP_PASS=your-app-password
-   ADMIN_EMAIL=admin@primevacations.com
+   ADMIN_EMAIL=admin@compass.com
    ADMIN_PASSWORD=your-secure-password
    ADMIN_AUTH_TOKEN=your-jwt-secret
    NEXT_PUBLIC_BASE_URL=https://your-app.vercel.app

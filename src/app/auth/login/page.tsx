@@ -146,9 +146,23 @@ function LoginForm() {
                 className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
               />
               <label htmlFor="isAdminLogin" className="ml-2 block text-sm text-gray-900">
-                Admin login (use legacy admin password)
+                Admin login
               </label>
             </div>
+
+            {formData.isAdminLogin && (
+              <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-md">
+                <div className="text-sm text-blue-800">
+                  <strong>Demo credentials:</strong>
+                  <div className="mt-1">
+                    Email: <code className="bg-blue-100 px-1 rounded">admin@compass.com</code>
+                  </div>
+                  <div>
+                    Password: <code className="bg-blue-100 px-1 rounded">admin123</code>
+                  </div>
+                </div>
+              </div>
+            )}
 
             <div>
               <button
